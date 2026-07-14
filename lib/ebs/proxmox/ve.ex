@@ -29,28 +29,53 @@ defmodule EBS.Proxmox.VE do
   Create a PVE client with API token auth.
 
   API tokens are more secure than username/password.
+  Secrets are injected via environment variables by obao/Concourse/SecretSpec.
 
-  Example:
+  Example (manual):
     client = EBS.Proxmox.VE.new(
       "virt-2.admin.siliconiq.com",
       8006,
-      "root@pam",
-      "ebs-backup",
+      "root@pam!ebs-backup",
       "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     )
-  """
-  def new(host, port, user_realm, token_id, token_secret) do
-    full_token_id = "#{user_realm}!#{token_id}"
 
+  Example (from config):
+    config = Application.get_env(:ebs, :pve_config)
+    client = EBS.Proxmox.VE.from_config(config)
+  """
+  def new(host, port, token_id, token_secret) do
     %__MODULE__{
       host: host,
       port: port,
-      token_id: full_token_id,
+      token_id: token_id,
       token_secret: token_secret,
       ticket: nil,
       csrf_token: nil,
       ticket_created_at: nil
     }
+  end
+
+  @doc """
+  Create a PVE client from application config.
+
+  Reads from :ebs :pve_config which is populated from environment variables
+  by obao/Concourse/SecretSpec at runtime.
+
+  Environment variables:
+    PVE_HOST - Proxmox host (required)
+    PVE_PORT - Proxmox port (default: 8006)
+    PVE_TOKEN_ID - API token ID, format: "root@pam!token-name" (required)
+    PVE_TOKEN_SECRET - API token secret (required)
+  """
+  def from_config do
+    config = Application.get_env(:ebs, :pve_config, %{})
+
+    host = config[:host] || raise "PVE_HOST not set in environment"
+    port = config[:port] || 8006
+    token_id = config[:token_id] || raise "PVE_TOKEN_ID not set in environment"
+    token_secret = config[:token_secret] || raise "PVE_TOKEN_SECRET not set in environment"
+
+    new(host, port, token_id, token_secret)
   end
 
   @doc """

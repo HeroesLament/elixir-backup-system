@@ -30,7 +30,31 @@ defmodule EBS.PBS.Client do
   @type list_response :: {:ok, [map()]} | {:error, String.t()}
 
   @doc """
-  Authenticate with Proxmox Backup Server.
+  Authenticate with Proxmox Backup Server from config.
+
+  Reads from :ebs :pbs_config which is populated from environment variables
+  by obao/Concourse/SecretSpec at runtime.
+
+  Environment variables:
+    PBS_HOST - PBS host (required)
+    PBS_PORT - PBS port (default: 8007)
+    PBS_USER - PBS user (default: root@pam)
+    PBS_PASSWORD - PBS password (required)
+  """
+  @spec authenticate_from_config() :: auth_response
+  def authenticate_from_config do
+    config = Application.get_env(:ebs, :pbs_config, %{})
+
+    host = config[:host] || raise "PBS_HOST not set in environment"
+    port = config[:port] || 8007
+    user = config[:user] || "root@pam"
+    password = config[:password] || raise "PBS_PASSWORD not set in environment"
+
+    authenticate(host, user, password, port)
+  end
+
+  @doc """
+  Authenticate with Proxmox Backup Server (manual).
 
   Returns a client struct with ticket + CSRF token for subsequent API calls.
   """
