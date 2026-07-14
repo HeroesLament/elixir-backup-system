@@ -1,0 +1,42 @@
+[package]
+name = "ebs-nbd"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "ebs_nbd"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "ebs-nbd-daemon"
+path = "src/bin/daemon.rs"
+
+[dependencies]
+# Erlang Distribution Protocol + ETF
+edp-rs = { version = "0.1", features = ["distribution"] }
+erltf = "0.2"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+
+# NBD client
+nbd = "0.4"
+
+# Hashing
+sha2 = "0.10"
+
+# Networking
+ssh2 = "0.9"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
