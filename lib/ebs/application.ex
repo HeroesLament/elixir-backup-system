@@ -19,8 +19,17 @@ defmodule EBS.Application do
       # Database (metadata durability)
       EBS.Repo,
 
+      # Registry for tracking backup jobs and NBD port workers
+      {Registry, keys: :unique, name: EBS.Registry},
+
+      # Chunk storage
+      {EBS.Storage.ChunkStore, []},
+
       # Legacy ETS store (will be replaced by Repo)
-      {EBS.Metadata.Store, []}
+      {EBS.Metadata.Store, []},
+
+      # Supervisor for backup jobs (created dynamically)
+      {DynamicSupervisor, name: EBS.Backup.DynamicSupervisor, strategy: :one_for_one}
     ]
 
     opts = [strategy: :one_for_one, name: EBS.Supervisor]
