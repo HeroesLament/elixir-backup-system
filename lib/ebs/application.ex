@@ -1,18 +1,23 @@
 defmodule EBS.Application do
-  @moduledoc "EBS OTP Application"
+  @moduledoc """
+  EBS MVP Application.
+
+  Starts only essential services:
+  - Metadata store (ETS-based backup history)
+
+  Everything else is driven from IEx.
+  """
   use Application
+
+  require Logger
 
   @impl true
   def start(_type, _args) do
+    Logger.info("EBS: starting MVP application")
+
     children = [
-      {EBS.Storage.BlockPool, []},
-      {EBS.Storage.ConsistencyChecker, []},
-      {EBS.Proxmox.CBTMonitor, []},
-      {EBS.Backup.Scheduler, []},
-      {EBS.Backup.Coordinator, []},
-      {EBS.Policy.Engine, []},
-      {EBS.Restore.Reconstructor, []},
-      {EBS.Events, []}
+      # Metadata persistence
+      {EBS.Metadata.Store, []}
     ]
 
     opts = [strategy: :one_for_one, name: EBS.Supervisor]
