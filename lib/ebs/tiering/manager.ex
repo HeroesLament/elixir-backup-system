@@ -41,7 +41,7 @@ defmodule EBS.Tiering.Manager do
       now = DateTime.utc_now()
 
       # Classify backups into tiers
-      {keep, delete, tier} = classify_backups(backups, now, policy)
+      {_keep, delete, tier} = classify_backups(backups, now, policy)
 
       # Apply tiering
       if policy[:cold_storage] do
@@ -69,14 +69,14 @@ defmodule EBS.Tiering.Manager do
   @spec tier_to_cold(Client.client(), String.t(), String.t(), String.t()) ::
     {:ok, nil} | {:error, String.t()}
   def tier_to_cold(_client, _datastore, backup_id, cold_target) do
-    case cold_target do
-      "s3://" <> _ ->
+    cond do
+      String.starts_with?(cold_target, "s3://") ->
         tier_to_s3(backup_id, cold_target)
 
-      path when String.starts_with?(path, "/") ->
-        tier_to_local(backup_id, path)
+      String.starts_with?(cold_target, "/") ->
+        tier_to_local(backup_id, cold_target)
 
-      _ ->
+      true ->
         {:error, "Unknown cold storage target: #{cold_target}"}
     end
   end
@@ -90,14 +90,14 @@ defmodule EBS.Tiering.Manager do
     Logger.info("Tiering: restoring #{backup_id} from cold storage")
 
     # Fetch from cold storage and restore to hot
-    case hot_source do
-      "s3://" <> _ ->
+    cond do
+      String.starts_with?(hot_source, "s3://") ->
         restore_from_s3(backup_id, hot_source)
 
-      path when String.starts_with?(path, "/") ->
-        restore_from_local(backup_id, path)
+      String.starts_with?(hot_source, "/") ->
+        restore_from_local(backup_id, hot_source)
 
-      _ ->
+      true ->
         {:error, "Unknown storage source: #{hot_source}"}
     end
   end

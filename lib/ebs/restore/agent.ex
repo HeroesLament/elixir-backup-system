@@ -43,11 +43,8 @@ defmodule EBS.Restore.Agent do
   def restore_directory(client, datastore, backup_id, destination) do
     with temp_tar <- Path.join(System.tmp_dir!(), "restore-#{:erlang.unique_integer()}.tar.gz"),
          {:ok, _} <- restore(client, datastore, backup_id, temp_tar),
-         File.mkdir_p(destination),
-         case System.cmd("tar", ["-xzf", temp_tar, "-C", destination]) do
-           {_, 0} -> :ok
-           {error, code} -> {:error, "tar failed with code #{code}: #{error}"}
-         end do
+         :ok <- File.mkdir_p(destination),
+         {_, 0} <- System.cmd("tar", ["-xzf", temp_tar, "-C", destination]) do
       File.rm(temp_tar)
       Logger.info("Restore.Agent: extracted #{backup_id} to #{destination}")
       {:ok, destination}

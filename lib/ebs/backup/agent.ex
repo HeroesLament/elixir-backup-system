@@ -27,7 +27,7 @@ defmodule EBS.Backup.Agent do
     with true <- File.exists?(file_path) || raise("File not found: #{file_path}"),
          {:ok, data} <- File.read(file_path),
          backup_id <- generate_backup_id(backup_name),
-         {:ok, result} <- Client.create_backup(
+         {:ok, _result} <- Client.create_backup(
            client,
            datastore,
            backup_id,
