@@ -16,7 +16,10 @@ defmodule EBS.Application do
     Logger.info("EBS: starting MVP application")
 
     children = [
-      # Metadata persistence
+      # Database (metadata durability)
+      EBS.Repo,
+
+      # Legacy ETS store (will be replaced by Repo)
       {EBS.Metadata.Store, []}
     ]
 

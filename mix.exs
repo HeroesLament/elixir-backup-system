@@ -21,8 +21,13 @@ defmodule EBS.MixProject do
 
   defp deps do
     [
+      # HTTP + JSON
       {:httpoison, "~> 2.0"},
-      {:jason, "~> 1.4"}
+      {:jason, "~> 1.4"},
+
+      # Database (metadata durability)
+      {:ecto_sqlite3, "~> 0.12"},
+      {:ecto, "~> 3.10"}
     ]
   end
 
