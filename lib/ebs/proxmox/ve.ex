@@ -222,13 +222,16 @@ defmodule EBS.Proxmox.VE do
     url = "https://#{client.host}:#{client.port}#{path}"
     headers = auth_headers(client)
 
-    HTTPoison.get(url, headers, timeout: @http_timeout, ssl: [verify: :verify_none])
+    HTTPoison.get(url, headers,
+      timeout: @http_timeout,
+      ssl: [verify: :verify_none, versions: [:"tlsv1.2", :"tlsv1.3"], insecure: true]
+    )
     |> handle_response()
   end
 
   defp auth_headers(%__MODULE__{token_id: token_id, token_secret: secret}) do
     [
-      {"Authorization", "PVEAPIToken=#{token_id}:#{secret}"}
+      {"Authorization", "PVEAPIToken=#{token_id}=#{secret}"}
     ]
   end
 
