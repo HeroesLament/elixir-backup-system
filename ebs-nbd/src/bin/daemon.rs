@@ -1,79 +1,49 @@
-/// EBS NBD Daemon - Distributed Erlang Node
+/// EBS NBD Daemon - Erlang Distribution Bridge
 ///
 /// Runs as a separate Tokio sidecar process, communicating with EBS (Elixir)
-/// via Erlang Distribution Protocol (EDP) + ETF serialization.
+/// via Erlang port driver (Unix socket with ETF serialization).
 ///
-/// Exposes GenServer-like RPC interface:
-///   - read_blocks(node, vmid, disk, offset, size) -> {:ok, chunks} | {:error, reason}
-///   - query_bitmap(node, vmid, disk) -> {:ok, bitmap} | {:error, reason}
+/// Elixir calls this via:
+///   :rpc.call(:'ebs-nbd@127.0.0.1', EbsNBD, :read_blocks, [node, vmid, disk, offset, size])
+///
+/// This daemon listens on a Unix socket and responds with ETF-encoded results.
 
 use anyhow::Result;
 use tracing::{info, error, debug};
+use std::path::Path;
+
+mod erlang_rpc;
+mod handlers;
+
+use erlang_rpc::RpcServer;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Initialize logging
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
+        .with_target(false)
+        .with_thread_ids(false)
         .init();
 
-    info!("EBS NBD Daemon starting");
+    info!("╔════════════════════════════════════════╗");
+    info!("║ EBS NBD Daemon v0.1.0                  ║");
+    info!("║ Erlang Distribution Bridge             ║");
+    info!("╚════════════════════════════════════════╝");
 
-    // TODO: Initialize EDP node
-    // let mut node = Node::new("ebs-nbd", "127.0.0.1:9999")?;
-    // node.connect("ebs", "127.0.0.1:9998").await?;
+    // Create RPC server
+    let socket_path = "/tmp/ebs-nbd-daemon.sock";
+    let server = RpcServer::new(socket_path)?;
 
-    // TODO: Register RPC handlers
-    // node.register_handler("read_blocks", handle_read_blocks);
-    // node.register_handler("query_bitmap", handle_query_bitmap);
+    info!("Listening on Unix socket: {}", socket_path);
+    info!("Node name: ebs-nbd@127.0.0.1");
+    info!("");
+    info!("Ready for RPC calls from Elixir");
+    info!("Example: :rpc.call(:'ebs-nbd@127.0.0.1', EbsNBD, :read_blocks, [\"virt-2\", 999, \"0\", 0, 65536])");
+    info!("");
 
-    // TODO: Run node
-    // node.run().await?;
-
-    info!("EBS NBD Daemon running");
-
-    // Keep alive
-    tokio::signal::ctrl_c().await?;
-    info!("EBS NBD Daemon shutting down");
-
-    Ok(())
-}
-
-/// Handle read_blocks RPC call from Elixir
-///
-/// Args: [node, vmid, disk, offset, size]
-/// Returns: {:ok, chunks} where chunks = [{sha256, offset, size, data}, ...]
-async fn handle_read_blocks(
-    node: String,
-    vmid: u32,
-    disk: String,
-    offset: u64,
-    size: u64,
-) -> Result<()> {
-    debug!("read_blocks: node={}, vmid={}, disk={}, offset={}, size={}",
-        node, vmid, disk, offset, size);
-
-    // TODO: Implement NBD reading
-    // 1. Connect to Proxmox NBD server (via SSH tunnel if needed)
-    // 2. Read blocks
-    // 3. Compute SHA256 chunks
-    // 4. Return via EDP
-
-    Ok(())
-}
-
-/// Handle query_bitmap RPC call from Elixir
-///
-/// Args: [node, vmid, disk]
-/// Returns: {:ok, bitmap} or {:error, reason}
-async fn handle_query_bitmap(
-    node: String,
-    vmid: u32,
-    disk: String,
-) -> Result<()> {
-    debug!("query_bitmap: node={}, vmid={}, disk={}", node, vmid, disk);
-
-    // TODO: Query dirty bitmap via QMP over SSH
+    // Run RPC server
+    server.run().await?;
 
     Ok(())
 }
