@@ -1,21 +1,14 @@
 /// EBS NBD Daemon - Erlang Distribution Bridge
 ///
 /// Runs as a separate Tokio sidecar process, communicating with EBS (Elixir)
-/// via Erlang port driver (Unix socket with ETF serialization).
+/// via Unix socket RPC with JSON payloads.
 ///
-/// Elixir calls this via:
-///   :rpc.call(:'ebs-nbd@127.0.0.1', EbsNBD, :read_blocks, [node, vmid, disk, offset, size])
-///
-/// This daemon listens on a Unix socket and responds with ETF-encoded results.
+/// Elixir calls this via a port driver or direct Unix socket:
+///   read_blocks(Node, VMID, Disk, Offset, Size) -> {ok, Chunk} | {error, Reason}
 
 use anyhow::Result;
-use tracing::{info, error, debug};
-use std::path::Path;
-
-mod erlang_rpc;
-mod handlers;
-
-use erlang_rpc::RpcServer;
+use tracing::info;
+use ebs_nbd::erlang_rpc::RpcServer;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -31,7 +24,6 @@ async fn main() -> Result<()> {
     info!("║ Erlang Distribution Bridge             ║");
     info!("╚════════════════════════════════════════╝");
 
-    // Create RPC server
     let socket_path = "/tmp/ebs-nbd-daemon.sock";
     let server = RpcServer::new(socket_path)?;
 
@@ -42,7 +34,6 @@ async fn main() -> Result<()> {
     info!("Example: :rpc.call(:'ebs-nbd@127.0.0.1', EbsNBD, :read_blocks, [\"virt-2\", 999, \"0\", 0, 65536])");
     info!("");
 
-    // Run RPC server
     server.run().await?;
 
     Ok(())
